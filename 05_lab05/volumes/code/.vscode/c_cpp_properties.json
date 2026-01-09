@@ -1,0 +1,26 @@
+{
+  "configurations": [
+      {
+          "name": "Linux",
+          "includePath": [
+              "${workspaceFolder}/**",
+              "/usr/include"
+          ],
+          "compilerPath": "/usr/bin/gcc",
+          "mergeConfigurations": true,
+          "defines": [
+            "_GNU_SOURCE",
+            "__USE_MISC"
+          ],
+          "browse": {
+            "path": [
+              "/usr/include",
+              "/usr/include/**",
+              "${workspaceFolder}"
+            ],
+            "databaseFilename": "${workspaceFolder}/.vscode/browse.vc.db"
+          }
+      }
+  ],
+  "version": 4
+}
