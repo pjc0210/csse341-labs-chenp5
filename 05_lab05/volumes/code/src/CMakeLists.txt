@@ -2,10 +2,10 @@
 
 set(NS_LIBS
     pcap
-    util
     pcap_util
     ip_util
     icmp_util
+    util
 )
 
 macro(ns_add_lib library)
@@ -33,8 +33,13 @@ endmacro(ns_add_exec)
 # add the libraries
 ns_add_lib(util util.c)
 ns_add_lib(pcap_util pcap_util.c)
-ns_add_lib(ip_util ip_util.c)
-ns_add_lib(icmp_util icmp_util.c)
+if(BUILD_SOLUTIONS)
+  ns_add_lib(ip_util ip_util_solution.c)
+  ns_add_lib(icmp_util icmp_util_solution.c)
+else(BUILD_SOLUTIONS)
+  ns_add_lib(ip_util ip_util.c)
+  ns_add_lib(icmp_util icmp_util.c)
+endif(BUILD_SOLUTIONS)
 
 # add the main executable
 ns_add_exec(ping ping.c)

@@ -46,3 +46,21 @@ ip_to_str(void *addr)
   struct in_addr *iaddr = (struct in_addr *)addr;
   return inet_ntoa(*iaddr);
 }
+
+uint16_t
+chksum(uint16_t *hdr, uint32_t len)
+{
+  unsigned long cksum = 0;
+  while(len > 1) {
+    cksum += *hdr++;
+    len -= sizeof(uint16_t);
+  }
+
+  if(len) {
+    cksum += *(u_char *)hdr;
+  }
+
+  cksum = (cksum >> 16) + (cksum & 0xffff);
+  cksum += (cksum >> 16);
+  return (uint16_t)(~cksum);
+}

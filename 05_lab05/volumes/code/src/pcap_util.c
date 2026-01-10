@@ -84,7 +84,7 @@ build_filter_expr(const char *ifname, const char *my_mac_addr, const char *base)
   struct pcap_addr *addr;
   struct sockaddr_in *sock_addr;
   const char *ipaddr;
-  pcap_if_t *pdev;
+  pcap_if_t *pdev, *p;
   int rc;
 
   // Find all devices to grab the IPv4 address
@@ -94,16 +94,22 @@ build_filter_expr(const char *ifname, const char *my_mac_addr, const char *base)
     exit(EXIT_FAILURE);
   }
 
+  /// find the device with the given name.
+  for(p = pdev; p && strncmp(p->name, ifname, strlen(p->name)); p = p->next)
+    ;
+  if(!p) {
+    print_err("Could not find device with name %s\n", ifname);
+    exit(EXIT_FAILURE);
+  }
+
   // find IP address of interface
   // assuming there's only one address for now, and it exists.
-  addr = pdev->addresses;
+  addr = p->addresses;
   // find the IP address that has AF_INET
   for(; addr; addr = addr->next) {
-    if(!strcmp(ifname, pdev->name)) {
-      sock_addr = (struct sockaddr_in *)addr->addr;
-      if(sock_addr->sin_family == AF_INET)
-        break;
-    }
+    sock_addr = (struct sockaddr_in *)addr->addr;
+    if(sock_addr->sin_family == AF_INET)
+      break;
   }
 
   if(!addr) {
