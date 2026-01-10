@@ -9,7 +9,6 @@
 #include <netinet/in.h>
 #include <netinet/ip.h>
 
-#include "icmp_util.h"
 #include "ip_util.h"
 #include "log.h"
 #include "pcap_util.h"
@@ -34,7 +33,7 @@ main(int argc, char **argv)
   my_mac_addr = argv[1];
 
   // build the filter expression
-  filter_expr = build_filter_expr("etho0", my_mac_addr, 0);
+  filter_expr = build_filter_expr("eth0", my_mac_addr, 0);
 
   // Grab the pcap device for the interface.
   handle = find_pcap_dev("eth0", &addr, filter_expr);

@@ -7,6 +7,10 @@ project(lab03 VERSION 1.0.0 LANGUAGES C)
 # check for libpcap
 find_library(PCAP pcap REQUIRED)
 
+# declare options
+option(BUILD_SOLUTIONS
+  "[INSTRUCTOR ONLY] Build with solutions for testing" OFF)
+
 if(DEFINED PCAP)
   message("-- Found libpcap library!")
 endif()

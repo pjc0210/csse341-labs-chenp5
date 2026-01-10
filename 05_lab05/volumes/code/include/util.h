@@ -4,6 +4,7 @@
 #define _UTIL_H
 
 // forward declarations
+#include <stdint.h>
 struct tcphdr;
 struct iphdr;
 struct timeval;
@@ -52,5 +53,15 @@ char *mac_to_str(void *addr);
  *    TO PERSIST. CALLS TO THIS FUNCTION WILL OVERWRITE PREVIOUS STRINGS.
  */
 char *ip_to_str(void *addr);
+
+/**
+ * Compute the checksum of a given header.
+ *
+ * @param hdr  The header to compute the checksum for.
+ * @param len  The length of the header in bytes.
+ *
+ * @return the computed checksum.
+ */
+uint16_t chksum(uint16_t *hdr, uint32_t len);
 
 #endif // util.h
