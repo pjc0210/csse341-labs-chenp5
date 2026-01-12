@@ -38,7 +38,7 @@ main(int argc, char **argv)
   while((rc = pcap_next_ex(handle, &hdr, &pkt)) >= 0) {
     tsstr = fmt_ts(&hdr->ts);
     print_log("(%s) Got a packet of len %d!\n", tsstr, hdr->len);
-    /*
+    
     // We have a packet here so we can parse it.
     eth_hdr        = (struct ether_header *)pkt;
     eth_type_field = ntohs(eth_hdr->ether_type);
@@ -46,11 +46,12 @@ main(int argc, char **argv)
     // Check if it's an ARP packet
     if(eth_type_field == ETHERTYPE_ARP) {
       parse_arp(pkt, hdr, handle);
+    } else if (eth_type_field == ETHERTYPE_IP) {
+      parse_ip(pkt, hdr, handle);
     } else {
       print_log("(%s) Got a packet of len %d that is not an ARP packet!\n",
                 fmt_ts(&hdr->ts), hdr->len);
     }
-    */
   }
 
   if(rc == -1) {
