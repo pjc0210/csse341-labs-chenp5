@@ -42,6 +42,7 @@ main(int argc, char **argv)
   while((rc = pcap_next_ex(handle, &hdr, &pkt)) >= 0) {
     eth_hdr = (struct ether_header *)pkt;
     if(ntohs(eth_hdr->ether_type) == ETHERTYPE_IP) {
+      printf("Got an IP packet, parsing...\n");
       parse_ip(pkt, my_mac_addr, handle, hdr->len);
     } else {
       print_err("Got an unknow packet, what to do?\n");
