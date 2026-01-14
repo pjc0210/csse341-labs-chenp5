@@ -57,7 +57,7 @@ EOF
 
   cat > run_"$hhost".sh <<EOF
 #!/bin/bash
-docker container exec -it ${hhost} \$1
+docker container exec -it -u netsec ${hhost} \$1
 EOF
 done
 
