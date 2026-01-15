@@ -11,13 +11,8 @@
 #include <string.h>
 
 #include "icmp_util.h"
+#include "util.h"
 #include "log.h"
-
-char *
-ip_to_str(void *addr) {
-  struct in_addr *iaddr = (struct in_addr *)addr;
-  return inet_ntoa(*iaddr);
-}
 
 void
 parse_icmp(const u_char *pkt, const char *my_mac_addr, pcap_t *handle,
@@ -82,6 +77,13 @@ parse_icmp(const u_char *pkt, const char *my_mac_addr, pcap_t *handle,
 
     reticmp->type = 0;
     reticmp->code = 0;
+
+    // change checksum
+    reticmp->checksum = 0;
+    reticmp->checksum = chksum((uint16_t *)reticmp, ntohs(iphdr->tot_len) - sizeof(struct iphdr));
+    
+    iphdr->check = 0;
+    iphdr->check = chksum((uint16_t *)iphdr, sizeof(struct iphdr));
 
   //     2.4 Use pcap_inject(handle, retpkt, len); to send the packet on the
   //         wire.
