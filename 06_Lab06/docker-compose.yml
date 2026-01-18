@@ -19,8 +19,8 @@ services:
         ipv4_address: 10.10.0.4
     command: >
       bash -c "
-      groupadd -g ${GID} netsec_group &&
-      useradd -m -u ${UID} -g netsec_group -s /bin/bash netsec &&
+      groupadd -g ${GID} netsec_group || true &&
+      useradd -m -u ${UID} -g netsec_group -s /bin/bash netsec || true &&
       echo 'netsec ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers &&
       bash /volumes/check_config.sh &&
       cp /volumes/vimrc /home/netsec/.vimrc &&
@@ -44,8 +44,8 @@ services:
         ipv4_address: 10.10.0.5
     command: >
       bash -c "
-      groupadd -g ${GID} netsec_group &&
-      useradd -m -u ${UID} -g netsec_group -s /bin/bash netsec &&
+      groupadd -g ${GID} netsec_group || true &&
+      useradd -m -u ${UID} -g netsec_group -s /bin/bash netsec || true &&
       echo 'netsec ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers &&
       bash /volumes/check_config.sh &&
       cp /volumes/vimrc /home/netsec/.vimrc &&
@@ -70,8 +70,8 @@ services:
         ipv4_address: 10.10.0.10
     command: >
       bash -c "
-      groupadd -g ${GID} netsec_group &&
-      useradd -m -u ${UID} -g netsec_group -s /bin/bash netsec &&
+      groupadd -g ${GID} netsec_group || true &&
+      useradd -m -u ${UID} -g netsec_group -s /bin/bash netsec || true &&
       echo 'netsec ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers &&
       bash /volumes/check_config.sh &&
       cp /volumes/vimrc /home/netsec/.vimrc &&
