@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: Unlicense
 
+#include <arpa/inet.h>
 #include <linux/tcp.h>
 #include <netinet/ether.h>
 #include <netinet/ip.h>
+#include <pcap.h>
 #include <stdlib.h>
 #include <string.h>
 

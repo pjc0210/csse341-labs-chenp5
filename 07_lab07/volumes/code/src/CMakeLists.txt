@@ -43,7 +43,7 @@ if(BUILD_SOLUTIONS)
 else(BUILD_SOLUTIONS)
   # ns_add_lib(ip_util ip_util.c)
   # ns_add_lib(icmp_util icmp_util.c)
-  ns_add_list(tcp_util tcp_util.c)
+  ns_add_lib(tcp_util tcp_util.c)
   ns_add_lib(arp_util arp_util.c)
 endif(BUILD_SOLUTIONS)
 
