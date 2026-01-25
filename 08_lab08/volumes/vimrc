@@ -1,0 +1,35 @@
+set number
+set smartindent
+set smartcase
+set showmode
+
+" search options
+set hlsearch
+set showmatch
+set ignorecase
+
+" 2 spaces per tab
+set shiftwidth=2
+set tabstop=2
+set expandtab
+
+set ruler
+set laststatus=2
+
+colo desert
+
+" enable mouse integration, yuk
+set mouse=a
+
+" map jk in insert mode to esc
+inoremap jk <ESC>
+
+" enable filetype stuff
+filetype indent on
+filetype plugin on
+syntax on
+
+" fix split to go bottom and right
+set splitright
+set splitbelow
+
