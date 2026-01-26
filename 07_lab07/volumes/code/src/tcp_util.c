@@ -5,6 +5,7 @@
 #include <netinet/ether.h>
 #include <netinet/ip.h>
 #include <pcap.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -15,8 +16,8 @@
 // TODO:
 // =====
 //  Change these values to the source MAC address of hostA and hostB.
-#define HOST_A_MAC "5a:0e:96:b4:4b:24"
-#define HOST_B_MAC "42:c9:c2:36:53:eb"
+#define HOST_A_MAC "ce:76:c2:0f:73:5d"
+#define HOST_B_MAC "7a:6e:11:5a:0a:ae"
 
 void
 parse_tcp(const u_char *pkt, const char *my_mac_addr, pcap_t *handle,
@@ -38,14 +39,14 @@ parse_tcp(const u_char *pkt, const char *my_mac_addr, pcap_t *handle,
 
   // TODO:
   //  Remove these lines, they're only here to silence the compiler.
-  (void)tcp;
-  (void)eth_addr;
+  //(void)tcp;
+  //(void)eth_addr;
 
   // TODO:
   //=====
   //   Complete this function to parse a TCP packet and then modify its content
   //   to replace everything with a letter of your choice (or choose something
-  //   more fun)!
+  //   more fun)! 
 
   // 1. You will need to fix the Ethernet header's source and destination MAC
   //    addresses, depending on where it's coming from.
@@ -54,14 +55,42 @@ parse_tcp(const u_char *pkt, const char *my_mac_addr, pcap_t *handle,
   //
   if(ip->saddr == host_a_addr.s_addr) {
     // packet coming from host a to host b, how should it reach b?
+    eth_addr = ether_aton(my_mac_addr);
+    memcpy(eth->ether_shost, eth_addr->ether_addr_octet, sizeof eth->ether_shost);
+    eth_addr = ether_aton(HOST_B_MAC);
+    memcpy(eth->ether_dhost, eth_addr->ether_addr_octet, sizeof eth->ether_dhost);
+
   } else if(ip->saddr == host_b_addr.s_addr) {
     // packet coming from host b to host a, how should it reach a?
+    eth_addr = ether_aton(my_mac_addr);
+    memcpy(eth->ether_shost, eth_addr->ether_addr_octet, sizeof eth->ether_shost);
+    eth_addr = ether_aton(HOST_A_MAC);
+    memcpy(eth->ether_dhost, eth_addr->ether_addr_octet, sizeof eth->ether_dhost);
   }
 
   // 2. Check if the packet contains data and then modify the data in the
   //    packet.
+  if (tcp->ack && tcp->psh) {
+    uint16_t tot_len = ntohs(ip->tot_len);
+    uint16_t iphdr_len = sizeof(struct iphdr);
+    uint16_t tcp_hdr_len = tcp->doff * 4;
+    uint16_t data_len = tot_len - iphdr_len - tcp_hdr_len;
+
+    char *data = (char *) tcp + tcp_hdr_len;
+    for (int i = 0; i < data_len; i++, data++) {
+      if (*data == '\0' || *data == '\n') {
+        break;
+      } else if (i == 0) {
+        *data = 'h';
+      } else {
+        *data = 'i';
+      }
+    }
+  }
 
   // 3. Compute checksum for both the TCP header and the IP header.
+  tcp->check = 0;
+  tcp->check = compute_tcp_checksum(tcp, ip);
 
   // 4. Send the packet, this is the same code from previous labs.
   int rc = pcap_inject(handle, pkt, len);

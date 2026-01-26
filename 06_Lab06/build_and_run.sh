@@ -16,9 +16,9 @@ source=$(cat /sys/class/net/eth0/address)
 # Set the destination MAC address if desired.
 # destination=
 victim=10.10.0.5
-target=10.10.0.4
+target=10.10.0.5
 num_packets=5
-arp=request
+arp=gratuitous
 
 if [[ -z ${destination} ]]; then
   sudo /volumes/code/build/bin/send_arp -s ${source} -v ${victim} -t ${target} -n ${num_packets} -a ${arp}

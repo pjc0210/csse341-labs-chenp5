@@ -118,7 +118,7 @@ main(int argc, char **argv)
   handle = find_pcap_dev("eth0", &addr, filter_expr);
 
   // Call the sending function
-  send_arp_packets(handle, num_packets, ARP_PKT_REQUEST, source_mac, dst_mac,
+  send_arp_packets(handle, num_packets, type, source_mac, dst_mac,
                    victim_ip, target_ip);
 
   exit(EXIT_SUCCESS);
