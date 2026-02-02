@@ -34,6 +34,7 @@ static u_char *
 hijack_tcp_connect(const u_char *pkt, struct iphdr *iphdr, struct tcphdr *tchdr,
                    const char *cmd, size_t *len)
 {
+  print_log("Running the TCP session hijacking code...\n");
   // TODO
   // =====
   //  Add your implementation for the TCP session hijacking here...
