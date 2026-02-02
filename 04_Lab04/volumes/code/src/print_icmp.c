@@ -3,13 +3,17 @@
 #include <net/ethernet.h>
 #include <net/if_arp.h>
 #include <netinet/ether.h>
+<<<<<<< HEAD
 #include <netinet/ip_icmp.h>
 #include <stdio.h>
+=======
+>>>>>>> 9908967e2f56d6e9f06789abfc1c269e58a635bb
 
 #include "log.h"
 #include "print_icmp.h"
 #include "util.h"
 
+<<<<<<< HEAD
 static const char *icmp_type_to_str(struct icmphdr *icmp) {
   switch (icmp->type) {
     case 0:
@@ -35,12 +39,15 @@ static const char *icmp_type_to_str(struct icmphdr *icmp) {
   }
 }
 
+=======
+>>>>>>> 9908967e2f56d6e9f06789abfc1c269e58a635bb
 int
 parse_icmp(const u_char *pkt, struct pcap_pkthdr *hdr, pcap_t *handle)
 {
   // TODO:
   // ======
   //  Add code here to print the content of an ICMPP packet.
+<<<<<<< HEAD
   struct ether_header *eth_hdr; 
   struct iphdr *ip_hdr;
   struct icmphdr *icmp;
@@ -58,5 +65,8 @@ parse_icmp(const u_char *pkt, struct pcap_pkthdr *hdr, pcap_t *handle)
   printf(" %-20s %-20x \n",   "Checksum", icmp->checksum);
   printf("+---------------------------------------------------------+\n");
 
+=======
+  //
+>>>>>>> 9908967e2f56d6e9f06789abfc1c269e58a635bb
   return 0;
 }

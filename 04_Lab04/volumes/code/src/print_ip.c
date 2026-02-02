@@ -11,6 +11,7 @@
 #include "log.h"
 #include "print_icmp.h"
 #include "print_ip.h"
+<<<<<<< HEAD
 #include "util.h" 
 
 static const char *ip_proto_to_str(struct iphdr *ip) {
@@ -28,6 +29,9 @@ static const char *ip_proto_to_str(struct iphdr *ip) {
       return "UNKNOWN";
   }
 }
+=======
+#include "util.h"
+>>>>>>> 9908967e2f56d6e9f06789abfc1c269e58a635bb
 
 int
 parse_ip(const u_char *pkt, struct pcap_pkthdr *hdr, pcap_t *handle)
@@ -35,6 +39,7 @@ parse_ip(const u_char *pkt, struct pcap_pkthdr *hdr, pcap_t *handle)
   // TODO:
   // ======
   //  Add code here to print the content of an IP packet.
+<<<<<<< HEAD
   //static char logfmt[1024];
   //char *str = logfmt;
   struct ether_header *eth_hdr;
@@ -65,3 +70,8 @@ parse_ip(const u_char *pkt, struct pcap_pkthdr *hdr, pcap_t *handle)
 }
 
 
+=======
+
+  return 0;
+}
+>>>>>>> 9908967e2f56d6e9f06789abfc1c269e58a635bb
