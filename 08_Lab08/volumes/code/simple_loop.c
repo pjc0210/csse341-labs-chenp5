@@ -13,6 +13,8 @@ main(int argc, char **argv)
   printf("\t stderr: %d\n", STDERR_FILENO);
   fflush(stdout);
 
+  //fprintf(stderr, "error!\n");
+
   while(1)
     ;
 
