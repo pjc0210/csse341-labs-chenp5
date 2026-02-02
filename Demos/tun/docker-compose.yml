@@ -1,0 +1,92 @@
+# set the name for the project
+name: tun
+
+services:
+  client:
+    image: netsos/rhit-netsec:latest
+    container_name: client
+    hostname: client
+    tty: true
+    working_dir: /volumes/
+    cap_add:
+      - ALL
+    volumes:
+      - ./volumes:/volumes
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    networks:
+      out-net:
+        ipv4_address: 10.10.0.4
+    command: >
+      bash -c "
+      groupadd -g ${GID} netsec_group &&
+      useradd -m -u ${UID} -g netsec_group -s /bin/bash netsec &&
+      echo 'netsec ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers &&
+      bash /volumes/check_config.sh &&
+      cp /volumes/vimrc /home/netsec/.vimrc &&
+      tail -f /dev/null
+      "
+
+  server:
+    image: netsos/rhit-netsec:latest
+    container_name: server
+    hostname: server
+    tty: true
+    working_dir: /volumes/
+    cap_add:
+      - ALL
+    volumes:
+      - ./volumes:/volumes
+    networks:
+      out-net:
+        ipv4_address: 10.10.0.5
+      local-net:
+        ipv4_address: 192.123.137.2
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    command: >
+      bash -c "
+      groupadd -g ${GID} netsec_group &&
+      useradd -m -u ${UID} -g netsec_group -s /bin/bash netsec &&
+      echo 'netsec ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers &&
+      bash /volumes/check_config.sh &&
+      cp /volumes/vimrc /home/netsec/.vimrc &&
+      sudo /volumes/setup_telnetd.sh &&
+      tail -f /dev/null
+      "
+
+  workstation:
+    image: netsos/rhit-netsec:latest
+    container_name: workstation
+    hostname: server
+    tty: true
+    working_dir: /volumes/
+    cap_add:
+      - ALL
+    volumes:
+      - ./volumes:/volumes
+    networks:
+      local-net:
+        ipv4_address: 192.123.137.4
+    command: >
+      bash -c "
+      groupadd -g ${GID} netsec_group &&
+      useradd -m -u ${UID} -g netsec_group -s /bin/bash netsec &&
+      echo 'netsec ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers &&
+      bash /volumes/check_config.sh &&
+      cp /volumes/vimrc /home/netsec/.vimrc &&
+      sudo /volumes/setup_telnetd.sh &&
+      tail -f /dev/null
+      "
+
+networks:
+  out-net:
+    name: out-net
+    ipam:
+      config:
+        - subnet: 10.10.0.0/24
+  local-net:
+    name: local-net
+    ipam:
+      config:
+        - subnet: 192.123.137.0/24
