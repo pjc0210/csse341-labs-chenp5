@@ -1,0 +1,183 @@
+# set the name for the project
+name: Project
+
+services:
+  client1:
+    image: netsos/rhit-netsec:latest
+    container_name: client1
+    hostname: client1
+    tty: true
+    working_dir: /volumes/
+    cap_add:
+      - ALL
+    volumes:
+      - ./volumes:/volumes
+    sysctls:
+      - net.ipv4.ip_forward=0
+    networks:
+      c1-net:
+        ipv4_address: 124.137.112.12
+    extra_hosts:
+      - "client2:178.196.10.12"
+      - "server:55.132.14.5"
+      - "workstation:192.168.133.12"
+    command: >
+      bash -c "
+      groupadd -g ${GID} netsec_group || true &&
+      useradd -m -u ${UID} -g netsec_group -s /bin/bash netsec || true &&
+      echo 'netsec ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers &&
+      bash /volumes/check_config.sh &&
+      cp /volumes/vimrc /home/netsec/.vimrc &&
+      ip route add 55.132.14.0/24 via 124.137.112.2 dev eth0 &&
+      ip route add 178.196.10.0/24 via 124.137.112.2 dev eth0 &&
+      tail -f /dev/null
+      "
+
+  client2:
+    image: netsos/rhit-netsec:latest
+    container_name: client2
+    hostname: client2
+    tty: true
+    working_dir: /volumes/
+    cap_add:
+      - ALL
+    volumes:
+      - ./volumes:/volumes
+    sysctls:
+      - net.ipv4.ip_forward=0
+    networks:
+      c2-net:
+        ipv4_address: 178.196.10.12
+    extra_hosts:
+      - "client1:124.137.112.2"
+      - "server:55.132.14.5"
+      - "workstation:192.168.133.12"
+    command: >
+      bash -c "
+      groupadd -g ${GID} netsec_group || true &&
+      useradd -m -u ${UID} -g netsec_group -s /bin/bash netsec || true &&
+      echo 'netsec ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers &&
+      bash /volumes/check_config.sh &&
+      cp /volumes/vimrc /home/netsec/.vimrc &&
+      ip route add 55.132.14.0/24 via 178.196.10.2 dev eth0 &&
+      ip route add 124.137.112.0/24 via 178.196.10.2 dev eth0 &&
+      tail -f /dev/null
+      "
+
+  server:
+    image: netsos/rhit-netsec:latest
+    container_name: server
+    hostname: server
+    working_dir: /volumes/
+    tty: true
+    cap_add:
+      - ALL
+    volumes:
+      - ./volumes:/volumes
+    sysctls:
+      - net.ipv4.ip_forward=0
+    networks:
+      edge-net:
+        ipv4_address: 55.132.14.5
+      local-net:
+        ipv4_address: 192.168.133.5
+    extra_hosts:
+      - "client1:124.137.112.12"
+      - "client2:178.196.10.12"
+      - "workstation:192.168.133.12"
+    command: >
+      bash -c "
+      groupadd -g ${GID} netsec_group || true &&
+      useradd -m -u ${UID} -g netsec_group -s /bin/bash netsec || true &&
+      echo 'netsec ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers &&
+      bash /volumes/check_config.sh &&
+      ip route add 178.196.10.0/24 via 55.132.14.2 dev eth0 &&
+      ip route add 124.137.112.0/24 via 55.132.14.2 dev eth0 &&
+      cp /volumes/vimrc /home/netsec/.vimrc &&
+      tail -f /dev/null
+      "
+
+  workstation:
+    image: netsos/rhit-netsec:latest
+    container_name: workstation
+    hostname: workstation
+    working_dir: /volumes/
+    tty: true
+    cap_add:
+      - ALL
+    volumes:
+      - ./volumes:/volumes
+    sysctls:
+      - net.ipv4.ip_forward=0
+    networks:
+      local-net:
+        ipv4_address: 192.168.133.12
+    extra_hosts:
+      - "server:192.168.133.5"
+    command: >
+      bash -c "
+      groupadd -g ${GID} netsec_group || true &&
+      useradd -m -u ${UID} -g netsec_group -s /bin/bash netsec || true &&
+      echo 'netsec ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers &&
+      bash /volumes/check_config.sh &&
+      cp /volumes/vimrc /home/netsec/.vimrc &&
+      sudo /volumes/setup_telnetd.sh &&
+      tail -f /dev/null
+      "
+
+  router:
+    image: netsos/rhit-netsec:latest
+    container_name: router
+    hostname: router
+    working_dir: /volumes/
+    tty: true
+    cap_add:
+      - ALL
+    volumes:
+      - ./volumes:/volumes
+    sysctls:
+      - net.ipv4.ip_forward=1
+    networks:
+      edge-net:
+        ipv4_address: 55.132.14.2
+      c2-net:
+        ipv4_address: 178.196.10.2
+      c1-net:
+        ipv4_address: 124.137.112.2
+    extra_hosts:
+      - "workstation:192.168.133.12"
+    command: >
+      bash -c "
+      groupadd -g ${GID} netsec_group || true &&
+      useradd -m -u ${UID} -g netsec_group -s /bin/bash netsec || true &&
+      echo 'netsec ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers &&
+      bash /volumes/check_config.sh &&
+      cp /volumes/vimrc /home/netsec/.vimrc &&
+      tail -f /dev/null
+      "
+
+networks:
+  local-net:
+    internal: true
+    name: local-net
+    ipam:
+      config:
+        - subnet: 192.168.133.0/24
+
+  edge-net:
+    name: edge-net
+    ipam:
+      config:
+        - subnet: 55.132.14.0/24
+
+  c2-net:
+    name: c2-net
+    ipam:
+      config:
+        - subnet: 178.196.10.0/24
+
+  c1-net:
+    name: c1-net
+    ipam:
+      config:
+        - subnet: 124.137.112.0/24
