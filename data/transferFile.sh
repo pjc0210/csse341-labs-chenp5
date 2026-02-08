@@ -12,7 +12,7 @@ if (( LAB_NUM < 10 )); then
 fi
 
 
-scp netsec:~/${PATH_TO_GIT_REPO}/${LAB_NUM}_lab${LAB_NUM}/volumes/${FILENAME} ~/${FILENAME}
+scp netsec:~/${PATH_TO_GIT_REPO}/${LAB_NUM}_Lab${LAB_NUM}/volumes/${FILENAME} ~/${FILENAME}
 if [ $? -ne 0 ]; then
     echo "Error: scp failed to copy ${FILENAME}" >&2
     exit $?
