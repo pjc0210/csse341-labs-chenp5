@@ -97,5 +97,11 @@ print_log "Starting telnetd server..."
 print_log "Changing root password for fun and profit"
 chpasswd<<<"root:netsec"
 
+print_log "Start the sshd service"
+service ssh start
+
+print_log "Start the nginx service"
+service nginx start
+
 print_log "Done and goobye..."
 

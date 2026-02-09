@@ -30,7 +30,7 @@ services:
       "
 
   server:
-    image: netsos/rhit-netsec:latest
+    image: netsos/rhit-netsec:fw
     container_name: server
     hostname: server
     tty: true
