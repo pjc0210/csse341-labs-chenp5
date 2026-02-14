@@ -10,6 +10,7 @@
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <sys/random.h>
 
 #include "log.h"
 #include "sock_util.h"
@@ -26,6 +27,40 @@ perform_handshake(int sockfd, struct sockaddr_in *server)
 {
   // Default to 0 initially so that you can test, but probably want to address
   // this during the implementation.
+
+  // Generate Nonce
+  size_t nonce_size = 4;
+  int* client_nonce = malloc(nonce_size * sizeof(size_t));
+ 
+  if (getrandom(client_nonce, nonce_size, 0) != nonce_size){
+    free(client_nonce);
+    perror("getrandom");
+  }
+
+  // Constructing message 
+  char msg[32];
+  int len = strlen(msg);
+  sprintf(msg, "HELLO %d", *client_nonce);
+
+  // TODO insert msg into payload of pkt
+
+  // Send pkt
+  int sent = send(sockfd, msg, len);
+  if (sent != len){
+    perror("send");
+  }
+
+  // Receive Server_nonce pkt
+
+  // Read server_nonce pkt into buffer
+
+  // Compute hash
+
+  // Send response type hash
+
+  // Receive ACK
+
+
   return 0;
 }
 
@@ -154,3 +189,4 @@ main(int argc, char **argv)
     }
   }
 }
+ 

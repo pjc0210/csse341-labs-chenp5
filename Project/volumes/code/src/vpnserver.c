@@ -64,6 +64,8 @@ srv_sock_callback(int tunfd, int sockfd, struct sockaddr_in *client)
   // TODO:
   // =====
   // Packet received on the UDP socket, what should we do with it?
+  struct WireChild *wc = (struct WireChild *)pkt;
+  print_log("Received packet with type 0x%02x and length %d\n", wc->type, wc->length);
 
   // Write something to the TUN interface to appear as if it was just received
   // there. That means the kernel will now route it to the right application.
@@ -76,6 +78,17 @@ srv_sock_callback(int tunfd, int sockfd, struct sockaddr_in *client)
 int
 lsn_handshake(int sockfd, struct sockaddr_in *client)
 {
+  // Receive client_nonce packet
+
+  // Save client_nonce
+
+  // Generate server nonce
+
+  // Send Challenge packet
+
+  // Receive client_response
+
+  // Verify client hash
   return 0;
 }
 
