@@ -175,10 +175,10 @@ lsn_handshake(int sockfd, struct sockaddr_in *client)
 
     // =======STEP 3========
     // Receive client_response
-    void *pkt3 = malloc(sizeof(struct WireChild) + nonce_size);
+    void *pkt3 = malloc(sizeof(struct WireChild) + sizeof(uint64_t));
     // Receive Server_nonce pkt
-    received_bytes = recvfrom(sockfd, pkt3, sizeof(struct WireChild) + nonce_size, 0, (struct sockaddr *)client, &client_addr_len);
-    // received_bytes = recv(sockfd, pkt3, sizeof(struct WireChild) + nonce_size, 0);
+    received_bytes = recvfrom(sockfd, pkt3, sizeof(struct WireChild) + sizeof(uint64_t), 0, (struct sockaddr *)client, &client_addr_len);
+    // received_bytes = recv(sockfd, pkt3, sizeof(struct WireChild) + sizeof(uint64_t), 0);
 
     if (received_bytes < 0){
         perror("recvfrom");
@@ -199,20 +199,30 @@ lsn_handshake(int sockfd, struct sockaddr_in *client)
         return -1;
     }
 
-    // Verify client hash
+    // Client hash
     uint64_t client_hash;
     memcpy(&client_hash, pkt3 + sizeof(struct WireChild), sizeof(uint64_t));
     seq_num = wc3->seq_num;
     free(pkt3);
 
     // Compute expected hash
-    void *secret = malloc(strlen(SECRET_WORD));
-    memcpy(secret, SECRET_WORD, strlen(SECRET_WORD));
+    void *secret = aligned_alloc(16, RANDOM_BYTES_NEEDED_FOR_CLHASH);
+    if (!secret) {
+        perror("aligned_alloc");
+        return -1;
+    }
+
+    // Fill it by repeating SECRET_WORD
+    size_t secret_len = strlen(SECRET_WORD);
+    for (size_t i = 0; i < RANDOM_BYTES_NEEDED_FOR_CLHASH; i++) {
+        ((char *)secret)[i] = SECRET_WORD[i % secret_len];
+    }
 
     char hash_input[2 * nonce_size];
     memcpy(hash_input, client_nonce, nonce_size);
     memcpy(hash_input + nonce_size, server_nonce, nonce_size);
     uint64_t expected_hash = clhash(secret, hash_input, 2 * nonce_size);
+    free(secret);
 
     if (client_hash != expected_hash){
         print_err("Client hash does not match expected hash\n");
