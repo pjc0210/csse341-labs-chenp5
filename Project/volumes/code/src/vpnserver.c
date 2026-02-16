@@ -10,7 +10,9 @@
 #include "log.h"
 #include "sock_util.h"
 #include "tun_util.h"
+#include "util.h"
 #include "vpnserver.h"
+#include "clhash.h"
 
 #define BUFFSIZE 2000
 #define SECRET_WORD "sandya is cool"

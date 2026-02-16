@@ -16,6 +16,7 @@
 #include "sock_util.h"
 #include "tun_util.h"
 #include "vpnclient.h"
+#include "util.h"
 #include "clhash.h"
 
 #define VPN_SERVER_IP "55.132.14.5"
@@ -119,7 +120,7 @@ perform_handshake(int sockfd, struct sockaddr_in *server)
     uint64_t hashed = clhash(secret, hash_input, 2 * nonce_size);
 
     // Send response type hash
-    void pkt3[sizeof(struct WireChild) + sizeof(uint64_t)];
+    void *pkt3 = malloc(sizeof(struct WireChild) + sizeof(uint64_t));
     struct WireChild* wc3 = (struct WireChild*)pkt3;
     wc3->W = 'W';
     wc3->C = 'C';
