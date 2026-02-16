@@ -98,7 +98,8 @@ lsn_handshake(int sockfd, struct sockaddr_in *client)
     // Receive client_nonce packet
     void *pkt = malloc(sizeof(struct WireChild) + nonce_size);
     // Receive Server_nonce pkt
-    ssize_t received_bytes = recvfrom(sockfd, pkt, sizeof(struct WireChild) + nonce_size, 0, (struct sockaddr *)client, (socklen_t *) sizeof(struct sockaddr_in));
+    // ssize_t received_bytes = recvfrom(sockfd, pkt, sizeof(struct WireChild) + nonce_size, 0, (struct sockaddr *)client, (socklen_t *) sizeof(struct sockaddr_in));
+    ssize_t received_bytes = recv(sockfd, pkt, sizeof(struct WireChild) + nonce_size, 0);
 
     if (received_bytes < 0){
         perror("recv");
@@ -163,7 +164,8 @@ lsn_handshake(int sockfd, struct sockaddr_in *client)
     // Receive client_response
     void *pkt3 = malloc(sizeof(struct WireChild) + nonce_size);
     // Receive Server_nonce pkt
-    received_bytes = recvfrom(sockfd, pkt3, sizeof(struct WireChild) + nonce_size, 0, (struct sockaddr *)client, (socklen_t *) sizeof(struct sockaddr_in));
+    // received_bytes = recvfrom(sockfd, pkt3, sizeof(struct WireChild) + nonce_size, 0, (struct sockaddr *)client, (socklen_t *) sizeof(struct sockaddr_in));
+    received_bytes = recv(sockfd, pkt3, sizeof(struct WireChild) + nonce_size, 0);
 
     if (received_bytes < 0){
         perror("recv");
