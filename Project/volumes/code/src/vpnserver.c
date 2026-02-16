@@ -168,7 +168,7 @@ lsn_handshake(int sockfd, struct sockaddr_in *client)
     received_bytes = recv(sockfd, pkt3, sizeof(struct WireChild) + nonce_size, 0);
 
     if (received_bytes < 0){
-        perror("recv");
+        perror("recvTWO");
         free(pkt3);
         return -1;
     }
