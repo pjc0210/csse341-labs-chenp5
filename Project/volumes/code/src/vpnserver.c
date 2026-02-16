@@ -172,8 +172,8 @@ lsn_handshake(int sockfd, struct sockaddr_in *client)
     }
 
     struct WireChild* wc3 = (struct WireChild*)pkt3;
-    if (wc3->type != RESPOND || wc3->seq_num != seq_num + 1){
-        print_err("Expected RESPOND packet, got type 0x%02x\n", wc3->type);
+    if (wc3->type != RESPONSE || wc3->seq_num != seq_num + 1){
+        print_err("Expected RESPONSE packet, got type 0x%02x\n", wc3->type);
         free(pkt3);
         return -1;
     }
@@ -230,7 +230,7 @@ lsn_handshake(int sockfd, struct sockaddr_in *client)
     }
 
     // updates session id
-    memcpy(&session_num, &hashed, sizeof(int));
+    memcpy(&session_num, &expected_hash, sizeof(int));
 
 
     // =======STEP 4========
