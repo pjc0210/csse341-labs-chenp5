@@ -91,6 +91,8 @@ check_checksum(struct WireChild *wc, size_t payload_len)
 int
 lsn_handshake(int sockfd, struct sockaddr_in *client)
 {
+    connect(sockfd, (struct sockaddr *)client, sizeof(struct sockaddr_in));
+    
     size_t nonce_size = 4;
     int seq_num;
 
@@ -156,6 +158,8 @@ lsn_handshake(int sockfd, struct sockaddr_in *client)
 
     // Send pkt
     // ssize_t sent = sendto(sockfd, pkt2, sizeof(struct WireChild) + nonce_size, 0, (struct sockaddr *)client, sizeof(struct sockaddr_in));
+    // destination address required
+
     sent = send(sockfd, pkt2, sizeof(struct WireChild) + nonce_size, 0);
     if (sent != sizeof(struct WireChild) + nonce_size){
         perror("send");
