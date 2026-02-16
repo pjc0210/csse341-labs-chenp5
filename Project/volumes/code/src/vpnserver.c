@@ -15,7 +15,7 @@
 #include "clhash.h"
 
 #define BUFFSIZE 2000
-#define SECRET_WORD "sandya is cool"
+#define SECRET_WORD "sandya is cool!"
 int session_num;
 
 void
