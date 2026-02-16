@@ -27,13 +27,13 @@ void srv_sock_callback(int tunfd, int sockfd, struct sockaddr_in *client);
 /**
  * Check the checksum of a WireChild packet.
  *
- * @param wc           The WireChild packet.
+ * @param pkt          The packet.
  * @param payload_len  The length of the payload.
  *
  * @return 1 if the checksum is valid, 0 otherwise.
  */
 int
-check_checksum(struct WireChild *wc, size_t payload_len);
+check_checksum(void *pkt, size_t payload_len);
 
 /**
  * Listen for an incoming handshake from a client.
