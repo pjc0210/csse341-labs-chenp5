@@ -163,7 +163,7 @@ lsn_handshake(int sockfd, struct sockaddr_in *client)
     wc2->checksum = chksum((uint16_t *)pkt2, sizeof(struct WireChild) + nonce_size);
 
     // Send pkt
-    ssize_t sent = sendto(sockfd, pkt2, sizeof(struct WireChild) + nonce_size, 0, (struct sockaddr *)client, &client_addr_len);
+    sent = sendto(sockfd, pkt2, sizeof(struct WireChild) + nonce_size, 0, (struct sockaddr *)client, client_addr_len);
     // sent = send(sockfd, pkt2, sizeof(struct WireChild) + nonce_size, 0);
     if (sent != sizeof(struct WireChild) + nonce_size){
         perror("sendto");
@@ -232,7 +232,7 @@ lsn_handshake(int sockfd, struct sockaddr_in *client)
         wc4->checksum = chksum((uint16_t *)pkt4, sizeof(struct WireChild));
 
         // Send pkt
-        sent = sendto(sockfd, pkt4, sizeof(struct WireChild), 0, (struct sockaddr *)client, &client_addr_len);
+        sent = sendto(sockfd, pkt4, sizeof(struct WireChild), 0, (struct sockaddr *)client, client_addr_len);
         // sent = send(sockfd, pkt4, sizeof(struct WireChild), 0);
         if (sent != sizeof(struct WireChild)){
             perror("sendto");
@@ -266,7 +266,7 @@ lsn_handshake(int sockfd, struct sockaddr_in *client)
     wc4->checksum = chksum((uint16_t *)pkt4, sizeof(struct WireChild));
 
     // Send pkt
-    sent = sendto(sockfd, pkt4, sizeof(struct WireChild), 0, (struct sockaddr *)client, &client_addr_len);
+    sent = sendto(sockfd, pkt4, sizeof(struct WireChild), 0, (struct sockaddr *)client, client_addr_len);
     // sent = send(sockfd, pkt4, sizeof(struct WireChild), 0);
     if (sent != sizeof(struct WireChild)){
         perror("sendto");
