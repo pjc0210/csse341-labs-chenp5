@@ -134,7 +134,7 @@ perform_handshake(int sockfd, struct sockaddr_in *server)
 
     uint64_t hashed = clhash(secret, hash_input, 2 * nonce_size);
     free(secret);
-    
+
     // Send response type hash
     void *pkt3 = malloc(sizeof(struct WireChild) + sizeof(uint64_t));
     struct WireChild* wc3 = (struct WireChild*)pkt3;
@@ -287,6 +287,8 @@ main(int argc, char **argv)
       print_err("Handshake with server failed!\n");
       continue;
     }
+
+    printf("Handshake successful with server %s:%d\n", inet_ntoa(server_addr.sin_addr), ntohs(server_addr.sin_port));
 
     // TODO:
     // ====
