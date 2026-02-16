@@ -7,6 +7,29 @@
 
 struct sockaddr_in;
 
+struct WireChild {
+    char W;
+    char C;
+    char version;
+    char type; // in hex
+    short length;
+    short checksum;
+    int seq_num;
+    int session_id;
+    int unused; // reserved for future use
+};
+
+enum WireType {
+    HELLO = 0x01,
+    CHALLENGE = 0x02,
+    RESPONSE = 0x03,
+    ACK = 0x04,
+    // unused 0x05 - 0xd9
+    DATA = 0xda,
+    // unused 0xdb - 0xfe
+    ERROR = 0xff
+};
+
 /**
  * Client side: connect through a UDP socket to the server.
  *

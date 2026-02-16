@@ -45,7 +45,7 @@ perform_handshake(int sockfd, struct sockaddr_in *server)
   // TODO insert msg into payload of pkt
 
   // Send pkt
-  int sent = send(sockfd, msg, len);
+  int sent = send(sockfd, msg, len, 0);
   if (sent != len){
     perror("send");
   }
