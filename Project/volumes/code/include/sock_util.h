@@ -10,13 +10,13 @@ struct sockaddr_in;
 struct WireChild {
     char W;
     char C;
-    char version;
-    char type; // in hex
-    short length;
-    short checksum;
-    int seq_num;
-    int session_id;
-    int unused; // reserved for future use
+    unsigned char version;
+    unsigned char type; // in hex
+    unsigned short length;
+    unsigned short checksum;
+    unsigned int seq_num;
+    unsigned int session_id;
+    unsigned int unused; // reserved for future use
 };
 
 enum WireType {

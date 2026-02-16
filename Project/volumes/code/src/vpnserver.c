@@ -13,6 +13,8 @@
 #include "vpnserver.h"
 
 #define BUFFSIZE 2000
+#define SECRET_WORD "sandya is cool"
+int session_num;
 
 void
 srv_tun_callback(int tunfd, int sockfd, struct sockaddr_in *client)
@@ -76,20 +78,188 @@ srv_sock_callback(int tunfd, int sockfd, struct sockaddr_in *client)
 }
 
 int
+check_checksum(struct WireChild *wc, size_t payload_len)
+{
+    uint16_t received_chksum = wc->checksum;
+    wc->checksum = 0;
+    uint16_t computed_chksum = chksum((uint16_t *)wc, sizeof(struct WireChild) + payload_len);
+    return received_chksum == computed_chksum;
+}
+
+int
 lsn_handshake(int sockfd, struct sockaddr_in *client)
 {
-  // Receive client_nonce packet
+    size_t nonce_size = 4;
+    int seq_num;
 
-  // Save client_nonce
+    // =======STEP 1========
+    // Receive client_nonce packet
+    void *pkt = malloc(sizeof(struct WireChild) + nonce_size);
+    // Receive Server_nonce pkt
+    int received_bytes = recvfrom(sockfd, pkt, sizeof(struct WireChild) + nonce_size, 0, (struct sockaddr *)client, sizeof(struct sockaddr_in));
 
-  // Generate server nonce
+    if (received_bytes < 0){
+        perror("recv");
+        free(pkt);
+        return -1;
+    }
 
-  // Send Challenge packet
+    struct WireChild* wc = (struct WireChild*)pkt;
+    if (wc->type != HELLO || wc->seq_num != 0){
+        print_err("Expected HELLO packet, got type 0x%02x\n", wc->type);
+        free(pkt);
+        return -1;
+    }
 
-  // Receive client_response
+    if (!check_checksum(wc, nonce_size)){
+        print_err("Invalid checksum for HELLO packet\n");
+        free(pkt);
+        return -1;
+    }
 
-  // Verify client hash
-  return 0;
+    // Save client_nonce
+    char client_nonce[nonce_size];
+    memcpy(client_nonce, pkt + sizeof(struct WireChild), nonce_size);
+    seq_num = wc->seq_num;
+    free(pkt);
+
+    // =======STEP 2========
+    // Generate server nonce
+    char server_nonce[nonce_size];
+    if (getrandom(server_nonce, nonce_size, 0) != nonce_size){
+        perror("getrandom");
+        return -1;
+    }
+
+    // Send Challenge packet
+    void* pkt2 = malloc(sizeof (struct WireChild) + nonce_size);
+    struct WireChild* wc2 = (struct WireChild*)pkt2;
+    wc2->W = 'W';
+    wc2->C = 'C';
+    wc2->version = 0x01;
+    wc2->type = CHALLENGE;
+    wc2->length = ntohs(sizeof(struct WireChild) + nonce_size);
+    wc2->checksum = 0;
+    wc2->seq_num = seq_num;
+    wc2->session_id = 0; // no session id yet
+    wc2->unused = 0; // reserved for future use
+    memcpy(pkt2 + sizeof(struct WireChild), server_nonce, nonce_size);
+
+    // compute checksum
+    wc2->checksum = chksum((uint16_t *)pkt2, sizeof(struct WireChild) + nonce_size);
+
+    // Send pkt
+    int sent = sendto(sockfd, pkt2, sizeof(struct WireChild) + nonce_size, 0, (struct sockaddr *)client, sizeof(struct sockaddr_in));
+    if (sent != sizeof(struct WireChild) + nonce_size){
+        perror("send");
+        free(pkt2);
+        return -1;
+    }
+    free(pkt2);
+
+    // =======STEP 3========
+    // Receive client_response
+    void *pkt3 = malloc(sizeof(struct WireChild) + nonce_size);
+    // Receive Server_nonce pkt
+    int received_bytes = recvfrom(sockfd, pkt3, sizeof(struct WireChild) + nonce_size, 0, (struct sockaddr *)client, sizeof(struct sockaddr_in));
+
+    if (received_bytes < 0){
+        perror("recv");
+        free(pkt3);
+        return -1;
+    }
+
+    struct WireChild* wc3 = (struct WireChild*)pkt3;
+    if (wc3->type != RESPOND || wc3->seq_num != seq_num + 1){
+        print_err("Expected RESPOND packet, got type 0x%02x\n", wc3->type);
+        free(pkt3);
+        return -1;
+    }
+    
+    if (!check_checksum(wc3, sizeof(uint64_t))){
+        print_err("Invalid checksum for RESPOND packet\n");
+        free(pkt3);
+        return -1;
+    }
+
+    // Verify client hash
+    uint64_t client_hash;
+    memcpy(&client_hash, pkt3 + sizeof(struct WireChild), sizeof(uint64_t));
+    seq_num = wc3->seq_num;
+    free(pkt3);
+
+    // Compute expected hash
+    void *secret = malloc(strlen(SECRET_WORD));
+    memcpy(secret, SECRET_WORD, strlen(SECRET_WORD));
+
+    char hash_input[2 * nonce_size];
+    memcpy(hash_input, client_nonce, nonce_size);
+    memcpy(hash_input + nonce_size, server_nonce, nonce_size);
+    uint64_t expected_hash = clhash(secret, hash_input, 2 * nonce_size);
+
+    if (client_hash != expected_hash){
+        print_err("Client hash does not match expected hash\n");
+
+        void *pkt4 = malloc(sizeof(struct WireChild));
+        struct WireChild* wc4 = (struct WireChild*)pkt4;
+        wc4->W = 'W';
+        wc4->C = 'C';
+        wc4->version = 0x01;
+        wc4->type = ERROR;
+        wc4->length = ntohs(sizeof(struct WireChild));
+        wc4->checksum = 0;
+        wc4->seq_num = seq_num;
+        wc4->session_id = session_num;
+        wc4->unused = 0; // reserved for future use
+        
+        // compute checksum
+        wc4->checksum = chksum((uint16_t *)pkt4, sizeof(struct WireChild));
+
+        // Send pkt
+        int sent = sendto(sockfd, pkt4, sizeof(struct WireChild), 0, (struct sockaddr *)client, sizeof(struct sockaddr_in));
+        if (sent != sizeof(struct WireChild)){
+            perror("send");
+            free(pkt4);
+            return -1;
+        }
+
+        free(pkt4);
+        return -1;
+    }
+
+    // updates session id
+    memcpy(&session_num, &hashed, sizeof(int));
+
+
+    // =======STEP 4========
+    // Send ACK response
+    void *pkt4 = malloc(sizeof(struct WireChild));
+    struct WireChild* wc4 = (struct WireChild*)pkt4;
+    wc4->W = 'W';
+    wc4->C = 'C';
+    wc4->version = 0x01;
+    wc4->type = ACK;
+    wc4->length = ntohs(sizeof(struct WireChild));
+    wc4->checksum = 0;
+    wc4->seq_num = seq_num;
+    wc4->session_id = session_num;
+    wc4->unused = 0; // reserved for future use
+
+    // compute checksum
+    wc4->checksum = chksum((uint16_t *)pkt4, sizeof(struct WireChild));
+
+    // Send pkt
+    int sent = sendto(sockfd, pkt4, sizeof(struct WireChild), 0, (struct sockaddr *)client, sizeof(struct sockaddr_in));
+    if (sent != sizeof(struct WireChild)){
+        perror("send");
+        free(pkt4);
+        return -1;
+    }
+    free(pkt4);
+
+    // close(sockfd);
+
+    return 0;
 }
 
 int
