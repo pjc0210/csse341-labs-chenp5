@@ -11,6 +11,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <sys/random.h>
+#include <arpa/inet.h>
 
 #include "log.h"
 #include "sock_util.h"
