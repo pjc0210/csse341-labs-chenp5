@@ -91,8 +91,6 @@ check_checksum(struct WireChild *wc, size_t payload_len)
 int
 lsn_handshake(int sockfd, struct sockaddr_in *client)
 {
-    connect(sockfd, (struct sockaddr *)client, sizeof(struct sockaddr_in));
-    
     size_t nonce_size = 4;
     int seq_num;
 
@@ -102,12 +100,20 @@ lsn_handshake(int sockfd, struct sockaddr_in *client)
     // =======STEP 1========
     // Receive client_nonce packet
     void *pkt = malloc(sizeof(struct WireChild) + nonce_size);
+
     // Receive Server_nonce pkt
-    // ssize_t received_bytes = recvfrom(sockfd, pkt, sizeof(struct WireChild) + nonce_size, 0, (struct sockaddr *)client, (socklen_t *) sizeof(struct sockaddr_in));
-    received_bytes = recv(sockfd, pkt, sizeof(struct WireChild) + nonce_size, 0);
+    socklen_t client_addr_len = sizeof(struct sockaddr_in);
+    received_bytes = recvfrom(sockfd, pkt, sizeof(struct WireChild) + nonce_size, 0, (struct sockaddr *)client, &client_addr_len);
 
     if (received_bytes < 0){
-        perror("recv");
+        perror("recvfrom");
+        free(pkt);
+        return -1;
+    }
+
+    // connect to client
+    if (connect(sockfd, (struct sockaddr *)client, sizeof(struct sockaddr_in)) < 0) {
+        perror("connect");
         free(pkt);
         return -1;
     }
@@ -157,12 +163,10 @@ lsn_handshake(int sockfd, struct sockaddr_in *client)
     wc2->checksum = chksum((uint16_t *)pkt2, sizeof(struct WireChild) + nonce_size);
 
     // Send pkt
-    // ssize_t sent = sendto(sockfd, pkt2, sizeof(struct WireChild) + nonce_size, 0, (struct sockaddr *)client, sizeof(struct sockaddr_in));
-    // destination address required
-
-    sent = send(sockfd, pkt2, sizeof(struct WireChild) + nonce_size, 0);
+    ssize_t sent = sendto(sockfd, pkt2, sizeof(struct WireChild) + nonce_size, 0, (struct sockaddr *)client, &client_addr_len);
+    // sent = send(sockfd, pkt2, sizeof(struct WireChild) + nonce_size, 0);
     if (sent != sizeof(struct WireChild) + nonce_size){
-        perror("send");
+        perror("sendto");
         free(pkt2);
         return -1;
     }
@@ -172,11 +176,11 @@ lsn_handshake(int sockfd, struct sockaddr_in *client)
     // Receive client_response
     void *pkt3 = malloc(sizeof(struct WireChild) + nonce_size);
     // Receive Server_nonce pkt
-    // received_bytes = recvfrom(sockfd, pkt3, sizeof(struct WireChild) + nonce_size, 0, (struct sockaddr *)client, (socklen_t *) sizeof(struct sockaddr_in));
-    received_bytes = recv(sockfd, pkt3, sizeof(struct WireChild) + nonce_size, 0);
+    received_bytes = recvfrom(sockfd, pkt3, sizeof(struct WireChild) + nonce_size, 0, (struct sockaddr *)client, &client_addr_len);
+    // received_bytes = recv(sockfd, pkt3, sizeof(struct WireChild) + nonce_size, 0);
 
     if (received_bytes < 0){
-        perror("recv");
+        perror("recvfrom");
         free(pkt3);
         return -1;
     }
@@ -228,10 +232,10 @@ lsn_handshake(int sockfd, struct sockaddr_in *client)
         wc4->checksum = chksum((uint16_t *)pkt4, sizeof(struct WireChild));
 
         // Send pkt
-        // sent = sendto(sockfd, pkt4, sizeof(struct WireChild), 0, (struct sockaddr *)client, sizeof(struct sockaddr_in));
-        sent = send(sockfd, pkt4, sizeof(struct WireChild), 0);
+        sent = sendto(sockfd, pkt4, sizeof(struct WireChild), 0, (struct sockaddr *)client, &client_addr_len);
+        // sent = send(sockfd, pkt4, sizeof(struct WireChild), 0);
         if (sent != sizeof(struct WireChild)){
-            perror("send");
+            perror("sendto");
             free(pkt4);
             return -1;
         }
@@ -262,10 +266,10 @@ lsn_handshake(int sockfd, struct sockaddr_in *client)
     wc4->checksum = chksum((uint16_t *)pkt4, sizeof(struct WireChild));
 
     // Send pkt
-    // sent = sendto(sockfd, pkt4, sizeof(struct WireChild), 0, (struct sockaddr *)client, sizeof(struct sockaddr_in));
-    sent = send(sockfd, pkt4, sizeof(struct WireChild), 0);
+    sent = sendto(sockfd, pkt4, sizeof(struct WireChild), 0, (struct sockaddr *)client, &client_addr_len);
+    // sent = send(sockfd, pkt4, sizeof(struct WireChild), 0);
     if (sent != sizeof(struct WireChild)){
-        perror("send");
+        perror("sendto");
         free(pkt4);
         return -1;
     }
