@@ -28,11 +28,12 @@ int seq_num = 0;
 int session_num;
 
 int
-check_checksum(struct WireChild *wc, size_t payload_len)
+check_checksum(void *pkt, size_t payload_len)
 {
+    struct WireChild *wc = (struct WireChild *)pkt;
     uint16_t received_chksum = wc->checksum;
     wc->checksum = 0;
-    uint16_t computed_chksum = chksum((uint16_t *)wc, sizeof(struct WireChild) + payload_len);
+    uint16_t computed_chksum = chksum((uint16_t *)pkt, sizeof(struct WireChild) + payload_len);
     return received_chksum == computed_chksum;
 }
 
@@ -102,7 +103,7 @@ perform_handshake(int sockfd, struct sockaddr_in *server)
         return -1;
     }
 
-    if (!check_checksum(wc2, nonce_size)){
+    if (!check_checksum(pkt2, nonce_size)){
         print_err("Invalid checksum for CHALLENGE packet\n");
         free(pkt2);
         return -1;
@@ -171,7 +172,7 @@ perform_handshake(int sockfd, struct sockaddr_in *server)
         return -1;
     }
 
-    if (!check_checksum(wc4, 0)){
+    if (!check_checksum(pkt4, 0)){
         print_err("Invalid checksum for ACK packet\n");
         free(pkt4);
         return -1;
