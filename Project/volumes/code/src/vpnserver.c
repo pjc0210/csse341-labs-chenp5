@@ -326,6 +326,8 @@ main(int argc, char **argv)
       continue;
     }
 
+    printf("Handshake successful with client %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+
     // TODO:
     // ====
     //   For now this will only do one session and stay there forever, you'd
