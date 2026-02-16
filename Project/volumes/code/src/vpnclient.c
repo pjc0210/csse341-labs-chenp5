@@ -23,7 +23,7 @@
 #define VPN_SERVER_PORT 9090
 
 #define BUFFSIZE 2000
-#define SECRET_WORD "sandya is cool"
+#define SECRET_WORD "sandya is cool!"
 int seq_num = 0;
 int session_num;
 
@@ -116,15 +116,25 @@ perform_handshake(int sockfd, struct sockaddr_in *server)
 
     // =======STEP 3========
     // Compute hash
-    void *secret = malloc(strlen(SECRET_WORD));
-    memcpy(secret, SECRET_WORD, strlen(SECRET_WORD));
+    void *secret = aligned_alloc(16, RANDOM_BYTES_NEEDED_FOR_CLHASH);
+    if (!secret) {
+        perror("aligned_alloc");
+        return -1;
+    }
+
+    // Fill it by repeating SECRET_WORD
+    size_t secret_len = strlen(SECRET_WORD);
+    for (size_t i = 0; i < RANDOM_BYTES_NEEDED_FOR_CLHASH; i++) {
+        ((char *)secret)[i] = SECRET_WORD[i % secret_len];
+    }
 
     char hash_input[2 * nonce_size];
     memcpy(hash_input, client_nonce, nonce_size);
     memcpy(hash_input + nonce_size, server_nonce, nonce_size);
 
     uint64_t hashed = clhash(secret, hash_input, 2 * nonce_size);
-
+    free(secret);
+    
     // Send response type hash
     void *pkt3 = malloc(sizeof(struct WireChild) + sizeof(uint64_t));
     struct WireChild* wc3 = (struct WireChild*)pkt3;
