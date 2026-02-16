@@ -70,7 +70,7 @@ perform_handshake(int sockfd, struct sockaddr_in *server)
     wc->checksum = chksum((uint16_t *)pkt, sizeof(struct WireChild) + nonce_size);
 
     // Send pkt
-    int sent = sendto(sockfd, pkt, sizeof(struct WireChild) + nonce_size, 0, (struct sockaddr *)server, sizeof(struct sockaddr_in));
+    ssize_t sent = sendto(sockfd, pkt, sizeof(struct WireChild) + nonce_size, 0, (struct sockaddr *)server, sizeof(struct sockaddr_in));
     if (sent != sizeof(struct WireChild) + nonce_size){
         perror("send");
         free(pkt);
@@ -82,7 +82,7 @@ perform_handshake(int sockfd, struct sockaddr_in *server)
     // =======STEP 2========
     void *pkt2 = malloc(sizeof(struct WireChild) + nonce_size);
     // Receive Server_nonce pkt
-    int received_bytes = recvfrom(sockfd, pkt2, sizeof(struct WireChild) + nonce_size, 0, (struct sockaddr *)server, sizeof(struct sockaddr_in));
+    ssize_t received_bytes = recvfrom(sockfd, pkt2, sizeof(struct WireChild) + nonce_size, 0, (struct sockaddr *)server, sizeof(struct sockaddr_in));
     if (received_bytes < 0){
         perror("recv");
         free(pkt2);
@@ -137,7 +137,7 @@ perform_handshake(int sockfd, struct sockaddr_in *server)
     wc3->checksum = chksum((uint16_t *)pkt3, sizeof(struct WireChild) + sizeof(uint64_t));
 
     // Send pkt
-    int sent = sendto(sockfd, pkt3, sizeof(struct WireChild) + sizeof(uint64_t), 0, (struct sockaddr *)server, sizeof(struct sockaddr_in));
+    sent = sendto(sockfd, pkt3, sizeof(struct WireChild) + sizeof(uint64_t), 0, (struct sockaddr *)server, sizeof(struct sockaddr_in));
     if (sent != sizeof(struct WireChild) + sizeof(uint64_t)){
         perror("send");
     }
@@ -151,7 +151,7 @@ perform_handshake(int sockfd, struct sockaddr_in *server)
     // Receive ACK
     void *pkt4 = malloc(sizeof(struct WireChild));
     // Receive Server_nonce pkt
-    int received_bytes = recvfrom(sockfd, pkt4, sizeof(struct WireChild), 0, (struct sockaddr *)server, sizeof(struct sockaddr_in));
+    received_bytes = recvfrom(sockfd, pkt4, sizeof(struct WireChild), 0, (struct sockaddr *)server, sizeof(struct sockaddr_in));
     if (received_bytes < 0){
         perror("recv");
     }
