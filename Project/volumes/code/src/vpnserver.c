@@ -80,11 +80,12 @@ srv_sock_callback(int tunfd, int sockfd, struct sockaddr_in *client)
 }
 
 int
-check_checksum(struct WireChild *wc, size_t payload_len)
+check_checksum(void *pkt, size_t payload_len)
 {
+    struct WireChild *wc = (struct WireChild *)pkt;
     uint16_t received_chksum = wc->checksum;
     wc->checksum = 0;
-    uint16_t computed_chksum = chksum((uint16_t *)wc, sizeof(struct WireChild) + payload_len);
+    uint16_t computed_chksum = chksum((uint16_t *)pkt, sizeof(struct WireChild) + payload_len);
     return received_chksum == computed_chksum;
 }
 
@@ -125,7 +126,7 @@ lsn_handshake(int sockfd, struct sockaddr_in *client)
         return -1;
     }
 
-    if (!check_checksum(wc, nonce_size)){
+    if (!check_checksum(pkt, nonce_size)){
         print_err("Invalid checksum for HELLO packet\n");
         free(pkt);
         return -1;
@@ -192,8 +193,8 @@ lsn_handshake(int sockfd, struct sockaddr_in *client)
         return -1;
     }
     
-    if (!check_checksum(wc3, sizeof(uint64_t))){
-        print_err("Invalid checksum for RESPOND packet\n");
+    if (!check_checksum(pkt3, sizeof(uint64_t))){
+        print_err("Invalid checksum for RESPONSE packet\n");
         free(pkt3);
         return -1;
     }
