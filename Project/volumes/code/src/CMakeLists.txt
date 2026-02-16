@@ -39,6 +39,7 @@ ns_add_lib(pcap_util pcap_util.c)
 ns_add_lib(tun_util tun_util.c)
 ns_add_lib(sock_util sock_util.c)
 ns_add_lib(clhash clhash.c)
+target_compile_options(clhash PRIVATE -march=native)
 # if(BUILD_SOLUTIONS)
 # ns_add_lib(ip_util ip_util_solution.c)
 # ns_add_lib(icmp_util icmp_util_solution.c)
@@ -52,6 +53,7 @@ ns_add_lib(clhash clhash.c)
 # ns_add_lib(arp_util arp_util.c)
 # ns_add_exec(poison poison.c)
 # endif(BUILD_SOLUTIONS)
+
 
 # add the main executable
 ns_add_exec(vpnclient vpnclient.c)
