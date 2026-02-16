@@ -54,3 +54,4 @@ ns_add_lib(sock_util sock_util.c)
 # add the main executable
 ns_add_exec(vpnclient vpnclient.c)
 ns_add_exec(vpnserver vpnserver.c)
+ns_add_exec(clhash clhash.c)
