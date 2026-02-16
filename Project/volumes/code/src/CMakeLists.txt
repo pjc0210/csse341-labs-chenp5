@@ -8,6 +8,7 @@ set(NS_LIBS
     tun_util
     util
     pcap
+    clhash
 )
 
 macro(ns_add_lib library)
@@ -37,6 +38,7 @@ ns_add_lib(util util.c)
 ns_add_lib(pcap_util pcap_util.c)
 ns_add_lib(tun_util tun_util.c)
 ns_add_lib(sock_util sock_util.c)
+ns_add_lib(clhash clhash.c)
 # if(BUILD_SOLUTIONS)
 # ns_add_lib(ip_util ip_util_solution.c)
 # ns_add_lib(icmp_util icmp_util_solution.c)
@@ -54,4 +56,3 @@ ns_add_lib(sock_util sock_util.c)
 # add the main executable
 ns_add_exec(vpnclient vpnclient.c)
 ns_add_exec(vpnserver vpnserver.c)
-ns_add_exec(clhash clhash.c)
