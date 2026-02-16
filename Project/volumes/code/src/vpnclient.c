@@ -142,7 +142,7 @@ perform_handshake(int sockfd, struct sockaddr_in *server)
     wc3->checksum = chksum((uint16_t *)pkt3, sizeof(struct WireChild) + sizeof(uint64_t));
 
     // Send pkt
-    // ssize_t sent = sendto(sockfd, pkt3, sizeof(struct WireChild) + sizeof(uint64_t), 0, (struct sockaddr *)server, sizeof(struct sockaddr_in));
+    // sent = sendto(sockfd, pkt3, sizeof(struct WireChild) + sizeof(uint64_t), 0, (struct sockaddr *)server, sizeof(struct sockaddr_in));
     sent = send(sockfd, pkt3, sizeof(struct WireChild) + sizeof(uint64_t), 0);
     if (sent != sizeof(struct WireChild) + sizeof(uint64_t)){
         perror("send");
