@@ -226,7 +226,7 @@ tun_callback(int tunfd, int sockfd, struct sockaddr_in *server)
     // we receive
 
     void *new_pkt = malloc(sizeof(struct WireChild) + pktlen);
-    WireChild *wc = (WireChild *)new_pkt;
+    struct WireChild *wc = (struct WireChild *)new_pkt;
     wc->W = 'W';
     wc->C = 'C';
     wc->version = 0x01;
@@ -240,7 +240,7 @@ tun_callback(int tunfd, int sockfd, struct sockaddr_in *server)
     // encrypt ICMP packet with XOR
     crypto_coin_500000(pkt, pktlen);
 
-    memcpy(new_pkt + sizeof(WireChild), pkt, pktlen);
+    memcpy(new_pkt + sizeof(struct WireChild), pkt, pktlen);
 
     // compute checksum
     wc->checksum = chksum((uint16_t *)new_pkt, sizeof(struct WireChild) + pktlen);
@@ -274,7 +274,7 @@ sock_callback(int tunfd, int sockfd, struct sockaddr_in *server)
     // Write something to the TUN interface to appear as if it was just received
     // there. That means the kernel will now route it to the right application.
 
-    WireChild *wc = (struct WireChild *)pkt;
+    struct WireChild *wc = (struct WireChild *)pkt;
     if (wc->type != DATA){
         print_err("Expected DATA packet, got type 0x%02x\n", wc->type);
         return;
