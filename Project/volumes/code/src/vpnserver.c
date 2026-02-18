@@ -18,66 +18,109 @@
 #define BUFFSIZE 2000
 #define SECRET_WORD "sandya is cool!"
 int session_num;
+int seq_num = 0;
+
+void
+crypto_coin_500000(unsigned char* pkt, ssize_t len) {
+   for (int i = 0; i<len; i++){
+      pkt[i] = pkt[i] ^ SECRET_WORD[i % strlen(SECRET_WORD)];
+   }
+}
 
 void
 srv_tun_callback(int tunfd, int sockfd, struct sockaddr_in *client)
 {
-  unsigned char pkt[BUFFSIZE];
-  ssize_t pktlen = 0;
-  ssize_t sent   = 0;
+    unsigned char pkt[BUFFSIZE];
+    ssize_t pktlen = 0;
+    ssize_t sent   = 0;
 
-  print_log("Received packet on TUN interface!\n");
+    print_log("Received packet on TUN interface!\n");
 
-  bzero(pkt, BUFFSIZE);
-  pktlen = read(tunfd, pkt, BUFFSIZE);
-  if(pktlen < 0) {
-    print_err("Packet read on TUN interface failed: %s\n", strerror(errno));
-    return;
-  }
+    bzero(pkt, BUFFSIZE);
+    pktlen = read(tunfd, pkt, BUFFSIZE);
+    if(pktlen < 0) {
+        print_err("Packet read on TUN interface failed: %s\n", strerror(errno));
+        return;
+    }
 
-  // TODO:
-  // =====
-  // What should happen when you receive a packet on the TUN interface?
+    // TODO:
+    // =====
+    // What should happen when you receive a packet on the TUN interface?
+    // send something out on the UDP socket, for now, will just send out whatever
+    // we receive
+    void *new_pkt = malloc(sizeof(struct WireChild) + pktlen);
+    WireChild *wc = (WireChild *)new_pkt;
+    wc->W = 'W';
+    wc->C = 'C';
+    wc->version = 0x01;
+    wc->type = DATA;
+    wc->length = ntohs(sizeof(struct WireChild) + pktlen);
+    wc->checksum = 0;
+    wc->seq_num = ++seq_num;
+    wc->session_id = session_num;
+    wc->unused = 0;
 
-  // send something out on the UDP socket, for now, will just send out whatever
-  // we receive
-  sent = sendto(sockfd, pkt, pktlen, 0, (struct sockaddr *)client,
-                sizeof(*client));
-  if(sent < pktlen || sent < 0) {
-    print_err("Sending TUN packet on UDP socket had some errors\n");
+    // encrypt ICMP packet with XOR
+    crypto_coin_500000(pkt, pktlen);
+
+    memcpy(new_pkt + sizeof(WireChild), pkt, pktlen);
+
+    // compute checksum
+    wc->checksum = chksum((uint16_t *)new_pkt, sizeof(struct WireChild) + pktlen);
+
+    sent = sendto(sockfd, new_pkt, sizeof(struct WireChild) + pktlen, 0, (struct sockaddr *)client, sizeof(*client));
+    if(sent < pktlen || sent < 0) {
+        print_err("Sending TUN packet on UDP socket had some errors\n");
     if(sent < 0)
-      perror("sendto");
-  }
+        perror("sendto");
+    }
+    free(new_pkt);
 }
 
 void
 srv_sock_callback(int tunfd, int sockfd, struct sockaddr_in *client)
 {
-  unsigned char pkt[BUFFSIZE];
-  ssize_t pktlen    = 0;
-  socklen_t addrlen = sizeof(struct sockaddr_in);
+    unsigned char pkt[BUFFSIZE];
+    ssize_t pktlen    = 0;
+    socklen_t addrlen = sizeof(struct sockaddr_in);
 
-  print_log("Received packet on UDP socket!\n");
+    print_log("Received packet on UDP socket!\n");
 
-  bzero(pkt, BUFFSIZE);
-  pktlen =
-      recvfrom(sockfd, pkt, BUFFSIZE, 0, (struct sockaddr *)client, &addrlen);
-  if(pktlen < 0) {
-    print_err("Error reading packet from UDP socket: %s\n", strerror(errno));
-    return;
-  }
-  // TODO:
-  // =====
-  // Packet received on the UDP socket, what should we do with it?
-  struct WireChild *wc = (struct WireChild *)pkt;
-  print_log("Received packet with type 0x%02x and length %d\n", wc->type, wc->length);
+    bzero(pkt, BUFFSIZE);
+    pktlen = recvfrom(sockfd, pkt, BUFFSIZE, 0, (struct sockaddr *)client, &addrlen);
+    
+    if(pktlen < 0) {
+        print_err("Error reading packet from UDP socket: %s\n", strerror(errno));
+        return;
+    }
+    
+    // TODO:
+    // =====
+    // Packet received on the UDP socket, what should we do with it?
+    struct WireChild *wc = (struct WireChild *)pkt;
+    if (wc->type != DATA){
+        print_err("Expected DATA packet, got type 0x%02x\n", wc->type);
+        return;
+    }
+    if (wc->session_id != session_num){
+        print_err("Session ID mismatch, expected %d, got %d\n", session_num, wc->session_id);
+        return;
+    }
+    if (!check_checksum(pkt, pktlen - sizeof(struct WireChild))){
+        print_err("Invalid checksum for DATA packet\n");
+        return;
+    }
 
-  // Write something to the TUN interface to appear as if it was just received
-  // there. That means the kernel will now route it to the right application.
-  pktlen = write(tunfd, pkt, pktlen);
-  if(pktlen < 0) {
-    print_err("Error writing data to the TUN interface: %s\n", strerror(errno));
-  }
+    char *data = (char *)pkt + sizeof(struct WireChild);
+    ssize_t data_len = pktlen - sizeof(struct WireChild);
+    crypto_coin_500000(data, data_len);
+
+    // Write something to the TUN interface to appear as if it was just received
+    // there. That means the kernel will now route it to the right application.
+    pktlen = write(tunfd, data, data_len);
+    if(pktlen < 0) {
+        print_err("Error writing data to the TUN interface: %s\n", strerror(errno));
+    }
 }
 
 int
@@ -94,7 +137,6 @@ int
 lsn_handshake(int sockfd, struct sockaddr_in *client)
 {
     size_t nonce_size = 4;
-    int seq_num;
 
     ssize_t sent = 0;
     ssize_t received_bytes = 0;
