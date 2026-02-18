@@ -284,7 +284,7 @@ main(int argc, char **argv)
   //  session loop of going through the TUN and socket.
   while(1) {
     if(perform_handshake(sockfd, &server_addr)) {
-      // if failed, stop and tryi again.
+      // if failed, stop and try again.
       print_err("Handshake with server failed!\n");
       continue;
     }
