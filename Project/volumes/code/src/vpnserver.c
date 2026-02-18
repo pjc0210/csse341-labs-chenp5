@@ -49,7 +49,7 @@ srv_tun_callback(int tunfd, int sockfd, struct sockaddr_in *client)
     // send something out on the UDP socket, for now, will just send out whatever
     // we receive
     void *new_pkt = malloc(sizeof(struct WireChild) + pktlen);
-    WireChild *wc = (WireChild *)new_pkt;
+    struct WireChild *wc = (struct WireChild *)new_pkt;
     wc->W = 'W';
     wc->C = 'C';
     wc->version = 0x01;
@@ -63,7 +63,7 @@ srv_tun_callback(int tunfd, int sockfd, struct sockaddr_in *client)
     // encrypt ICMP packet with XOR
     crypto_coin_500000(pkt, pktlen);
 
-    memcpy(new_pkt + sizeof(WireChild), pkt, pktlen);
+    memcpy(new_pkt + sizeof(struct WireChild), pkt, pktlen);
 
     // compute checksum
     wc->checksum = chksum((uint16_t *)new_pkt, sizeof(struct WireChild) + pktlen);
