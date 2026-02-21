@@ -1,0 +1,9 @@
+#!/usr/sbin/nft -f
+
+# create the table netsec
+#   note that we don't need to use nft here, simple start the command.
+add table ip netsec_tbl
+
+# drop all traffic
+add chain netsec_tbl netsec_in { type filter hook forward priority 0 ; policy drop ; comment "drop traffic" ; }
+
